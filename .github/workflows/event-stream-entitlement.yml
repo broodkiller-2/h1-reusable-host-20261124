@@ -19,5 +19,8 @@ jobs:
             const body=await response.json().catch(()=>({}));
             const notEnabled=typeof body.message==='string'&&body.message.includes('Event subscriptions are not enabled for this account');
             console.log(JSON.stringify({endpoint:'GET /event-subscriptions',status:response.status,notEnabled}));
+            if(notEnabled)console.log('::error title=Event Streams unavailable::This owned account is not enabled for Event Streams');
+            else if(!response.ok)console.log('::error title=Event Streams endpoint error::Unexpected status '+response.status);
+            if(!response.ok)process.exitCode=1;
           })().catch(e=>{console.error(e.name);process.exitCode=1});
           NODE
