@@ -1,0 +1,45 @@
+name: H1 owned Dependabot alert permission boundary
+on:
+  pull_request:
+    paths:
+      - h1-pr-alert-probe-20261125.txt
+jobs:
+  allowed_read:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      vulnerability-alerts: read
+    steps:
+      - name: Authorized alert read control
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            'https://api.github.com/repos/broodkiller-2/h1-reusable-host-20261124/dependabot/alerts/12')
+          echo "allowed_read_status=${status}"
+  denied_read_write:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      vulnerability-alerts: none
+    steps:
+      - name: Denied alert read and mutation controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          read_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            'https://api.github.com/repos/broodkiller-2/h1-reusable-host-20261124/dependabot/alerts/12')
+          write_status=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -d '{"state":"dismissed","dismissed_reason":"inaccurate"}' \
+            'https://api.github.com/repos/broodkiller-2/h1-reusable-host-20261124/dependabot/alerts/12')
+          echo "denied_read_status=${read_status}"
+          echo "denied_write_status=${write_status}"
