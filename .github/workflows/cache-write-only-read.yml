@@ -1,0 +1,40 @@
+name: Owned cache write-only read boundary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  allowed-read:
+    runs-on: ubuntu-latest
+    cache-mode: read
+    steps:
+      - name: Restore owned existing cache with read grant
+        id: allowed
+        uses: actions/cache/restore@v4
+        with:
+          path: marker
+          key: h1-cache-allowed-45415666698
+      - name: Observe allowed marker
+        run: |
+          if test -f marker/allowed.txt; then present=1; else present=0; fi
+          echo "cache_read_control hit=${{ steps.allowed.outputs.cache-hit }} marker_present=$present"
+
+  write-only-read:
+    runs-on: ubuntu-latest
+    cache-mode: write-only
+    steps:
+      - name: Attempt restore with client mode overridden
+        id: restricted
+        uses: actions/cache/restore@v4
+        env:
+          ACTIONS_CACHE_MODE: write
+        with:
+          path: marker
+          key: h1-cache-allowed-45415666698
+      - name: Observe restricted marker
+        run: |
+          if test -f marker/allowed.txt; then present=1; else present=0; fi
+          echo "cache_read_restricted hit=${{ steps.restricted.outputs.cache-hit }} marker_present=$present"
