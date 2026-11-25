@@ -1,0 +1,1 @@
+Owned synthetic trigger for a Dependabot alert permission check. No secret or executable code.
