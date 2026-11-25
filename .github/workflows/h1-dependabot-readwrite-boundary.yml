@@ -1,0 +1,27 @@
+name: H1 owned Dependabot alert read-to-write boundary
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  vulnerability-alerts: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read permission and forbidden mutation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          read_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            'https://api.github.com/repos/broodkiller-2/h1-reusable-host-20261124/dependabot/alerts/12')
+          write_status=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -d '{"state":"dismissed","dismissed_reason":"inaccurate"}' \
+            'https://api.github.com/repos/broodkiller-2/h1-reusable-host-20261124/dependabot/alerts/12')
+          echo "read_status=${read_status}"
+          echo "write_status=${write_status}"
