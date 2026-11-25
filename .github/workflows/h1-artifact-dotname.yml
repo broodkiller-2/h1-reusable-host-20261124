@@ -1,0 +1,40 @@
+name: H1 owned artifact dotname boundary
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  producer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create harmless artifact files
+        run: |
+          printf 'untrusted\n' > marker.txt
+          printf 'safe\n' > control.txt
+      - name: Upload dotdot artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: '..'
+          path: marker.txt
+      - name: Upload safe artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: safe-control
+          path: control.txt
+  consumer:
+    needs: producer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare protected destination
+        run: |
+          mkdir -p "$RUNNER_TEMP/h1-artifact-boundary/artifacts"
+          printf 'trusted\n' > "$RUNNER_TEMP/h1-artifact-boundary/marker.txt"
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/h1-artifact-boundary/artifacts
+      - name: Observe cross-job file placement
+        run: |
+          printf 'parent_marker='; cat "$RUNNER_TEMP/h1-artifact-boundary/marker.txt"
+          test -f "$RUNNER_TEMP/h1-artifact-boundary/artifacts/safe-control/control.txt" && echo 'safe_control=inside'
+          test -f "$RUNNER_TEMP/h1-artifact-boundary/artifacts/marker.txt" && echo 'dotdot_control=inside' || echo 'dotdot_control=outside'
