@@ -1,0 +1,24 @@
+name: Owned fork SARIF ref boundary
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  probe:
+    if: github.event.pull_request.head.repo.full_name == 'broodkiller-1/h1-reusable-host-20261124'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out owned fork pull request
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Probe only owned SARIF refs
+        run: node h1-sarif-ref-probe.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
