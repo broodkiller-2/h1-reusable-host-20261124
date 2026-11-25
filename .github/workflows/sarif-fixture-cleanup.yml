@@ -1,0 +1,32 @@
+name: Remove owned SARIF test analysis
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete exact owned synthetic analysis
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          const base = 'https://api.github.com/repos/broodkiller-2/h1-reusable-host-20261124/code-scanning/analyses';
+          const headers = {Accept:'application/vnd.github+json', Authorization:`Bearer ${process.env.GH_TOKEN}`, 'X-GitHub-Api-Version':'2026-03-10', 'User-Agent':'OwnedSarifFixtureCleanup'};
+          (async()=>{
+            const before=await fetch(base+'?per_page=100',{headers});
+            if(!before.ok)throw Error('list-status-'+before.status);
+            const entries=await before.json();
+            const exact=entries.filter(x=>x.ref==='refs/pull/5/merge'&&x.tool?.name==='h1-synthetic-ref-boundary');
+            if(exact.length!==1||!exact[0].deletable)throw Error('unexpected-owned-analysis-count-or-state-'+exact.length);
+            const deleted=await fetch(base+'/'+exact[0].id+'?confirm_delete=true',{method:'DELETE',headers});
+            if(!deleted.ok)throw Error('delete-status-'+deleted.status);
+            const after=await fetch(base+'?per_page=100',{headers});
+            if(!after.ok)throw Error('verify-status-'+after.status);
+            const remaining=(await after.json()).filter(x=>x.ref==='refs/pull/5/merge'&&x.tool?.name==='h1-synthetic-ref-boundary');
+            console.log(JSON.stringify({analysisRef:'refs/pull/5/merge',deleteStatus:deleted.status,remaining:remaining.length}));
+            if(remaining.length)process.exitCode=1;
+          })().catch(e=>{console.error(e.message);process.exitCode=1});
+          NODE
