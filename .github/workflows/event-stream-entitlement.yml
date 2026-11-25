@@ -1,0 +1,23 @@
+name: Owned Event Streams entitlement check
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read own Event Streams entitlement
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          (async()=>{
+            const response=await fetch('https://api.github.com/event-subscriptions',{
+              headers:{Accept:'application/vnd.github+json',Authorization:`Bearer ${process.env.GH_TOKEN}`,'X-GitHub-Api-Version':'2026-03-10','User-Agent':'OwnedEventStreamsEntitlementCheck'}
+            });
+            const body=await response.json().catch(()=>({}));
+            const notEnabled=typeof body.message==='string'&&body.message.includes('Event subscriptions are not enabled for this account');
+            console.log(JSON.stringify({endpoint:'GET /event-subscriptions',status:response.status,notEnabled}));
+          })().catch(e=>{console.error(e.name);process.exitCode=1});
+          NODE
