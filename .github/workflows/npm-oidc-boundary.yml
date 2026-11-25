@@ -1,0 +1,16 @@
+name: Owned npm OIDC boundary fixture
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm inert fixture
+        run: echo 'owned OIDC fixture ready'
