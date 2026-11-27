@@ -1,0 +1,36 @@
+name: Owned lockfile permission probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Compare contents and lockfile writes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          node <<'NODE'
+          const base = `https://api.github.com/repos/${process.env.REPO}/contents/`;
+          const headers = { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' };
+          const control = `h1-lock-permission-control-${process.env.RUN_ID}.txt`;
+          async function put(path, content) {
+            const r = await fetch(base + path, { method: 'PUT', headers, body: JSON.stringify({ message: `Owned permission probe ${process.env.RUN_ID}`, content: Buffer.from(content).toString('base64') }) });
+            const body = await r.json().catch(() => ({}));
+            console.log(JSON.stringify({ path, status: r.status, message: body.message || null }));
+            return { status: r.status, sha: body.content?.sha };
+          }
+          async function remove(path, sha) {
+            if (!sha) return;
+            const r = await fetch(base + path, { method: 'DELETE', headers, body: JSON.stringify({ message: `Clean owned permission probe ${process.env.RUN_ID}`, sha }) });
+            console.log(JSON.stringify({ cleanup: path, status: r.status }));
+          }
+          const positive = await put(control, `h1-owned-control-${process.env.RUN_ID}\n`);
+          const lockfile = await put('.github/workflows/actions.lock', 'version: v0.0.3\nworkflows: {}\ndependencies: {}\n');
+          await remove('.github/workflows/actions.lock', lockfile.sha);
+          await remove(control, positive.sha);
+          NODE
