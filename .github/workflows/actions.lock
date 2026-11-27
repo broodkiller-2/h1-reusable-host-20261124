@@ -1,4 +1,4 @@
-# Owned synthetic lockfile provenance fixture.
+# Owned synthetic PR-head lockfile provenance discriminator.
 version: 'v0.0.3'
 workflows:
     '.github/workflows/h1-lock-pr-provenance.yml':
@@ -6,6 +6,6 @@ workflows:
 dependencies:
     'actions/checkout@v4':
         ref: 'v4'
-        commit: 'sha1-11d5960a326750d5838078e36cf38b85af677262'
+        commit: 'sha1-0000000000000000000000000000000000000000'
         owner_id: 44036562
         repo_id: 197814629
