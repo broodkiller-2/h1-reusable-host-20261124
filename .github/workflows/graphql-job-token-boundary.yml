@@ -33,7 +33,7 @@ jobs:
           }
           async function commit(head, change, label) {
             const input = {
-              branch: { repositoryNameWithOwner: repo, refName: 'refs/heads/main' },
+              branch: { repositoryNameWithOwner: repo, branchName: 'main' },
               expectedHeadOid: head,
               fileChanges: change,
               message: { headline: `H1 owned GraphQL job-token ${label}` },
