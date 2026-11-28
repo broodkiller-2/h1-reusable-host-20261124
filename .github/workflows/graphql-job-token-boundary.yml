@@ -44,7 +44,11 @@ jobs:
             })
             const body = await response.json().catch(() => ({}))
             const oid = body.data?.createCommitOnBranch?.commit?.oid ?? null
-            return { status: response.status, oid, errorTypes: (body.errors ?? []).map(e => e.type ?? 'UNKNOWN').slice(0, 3) }
+            return {
+              status: response.status, oid,
+              errorTypes: (body.errors ?? []).map(e => e.type ?? 'UNKNOWN').slice(0, 3),
+              errorMessages: (body.errors ?? []).map(e => String(e.message ?? '').replace(/(github_pat_|gh[psuor]_)[A-Za-z0-9_]+/g, '[redacted]').slice(0, 180)).slice(0, 3),
+            }
           }
           async function exactRead(path, expected) {
             const result = await get(`contents/${path}?ref=main`)
@@ -62,7 +66,7 @@ jobs:
             if (beforeRoot.status !== 404 || beforeLock.status !== 404 || ref.status !== 200 || !ref.body.object?.sha) return
 
             const rootWrite = await commit(ref.body.object.sha, add(root, marker), 'root create')
-            console.log(JSON.stringify({ rootWrite: { status: rootWrite.status, created: !!rootWrite.oid, errorTypes: rootWrite.errorTypes } }))
+            console.log(JSON.stringify({ rootWrite: { status: rootWrite.status, created: !!rootWrite.oid, errorTypes: rootWrite.errorTypes, errorMessages: rootWrite.errorMessages } }))
             if (!rootWrite.oid) return
             const rootRead = await exactRead(root, marker)
             console.log(JSON.stringify({ rootRead }))
